@@ -1,4 +1,3 @@
-# %%%
 import os
 from posixpath import split
 import numpy as np
@@ -8,7 +7,7 @@ import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset as BaseDataset
 import albumentations as albu
-# %%%
+
 IMAGE_FORMAT = ".jpg"
 LABEL_FORMAT = ".npy"
 
@@ -30,8 +29,7 @@ class Dataset(BaseDataset):
             images_dir, 
             masks_dir, 
             preprocessing_fn,
-            classes, 
-            classes_included=None,
+            num_classes, 
             augment=True
     ):
 
@@ -39,11 +37,7 @@ class Dataset(BaseDataset):
         self.images_fps = [os.path.join(images_dir, image_id + IMAGE_FORMAT) for image_id in self.ids]
         self.masks_fps = [os.path.join(masks_dir, image_id + LABEL_FORMAT) for image_id in self.ids]
         
-        # convert str names to class values on masks
-        if classes_included == None:
-            self.class_values = list(range(len(classes)))
-        else:
-            self.class_values = [classes.index(cls.lower()) for cls in classes_included]
+        self.class_values = list(range(num_classes))
 
         self.preprocessing_fn = preprocessing_fn
         
@@ -75,9 +69,6 @@ class Dataset(BaseDataset):
         
     def __len__(self):
         return len(self.ids)
-
-
-# %%%
 
     def get_training_augmentation(self):
         train_transform = [

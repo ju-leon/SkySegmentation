@@ -5,12 +5,12 @@ import os
 
 class SegmentationModel:
 
-    def __init__(self, encoder, encoder_weights, classes, activation, device, save_dir) -> None:
+    def __init__(self, encoder, encoder_weights, num_classes, activation, device, save_dir) -> None:
         # create segmentation model with pretrained encoder
         self.model = smp.FPN(
             encoder_name=encoder,
             encoder_weights=encoder_weights,
-            classes=len(classes),
+            classes=num_classes,
             activation=activation,
         )
 

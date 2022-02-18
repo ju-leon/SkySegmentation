@@ -39,8 +39,8 @@ def main():
     parser.add_argument("--save_dir", type=str,
                         help='Directory to save the trained model to')
 
-    parser.add_argument("--classes", type=list,
-                        help='Classes in the dataset')
+    parser.add_argument("--num_classes", type=int,
+                        help='Number of classes in the dataset including background')
 
     parser.add_argument("--eval_dir", type=str, default=None,
                         help="If set, plots evaluating model performance will be stored here")
@@ -77,7 +77,7 @@ def main():
         y_train_dir,
         preprocessing_fn=smp.encoders.get_preprocessing_fn(
             args['encoder'], args['encoder_weights']),
-        classes=args['classes'],
+        num_classes=args['num_classes'],
     )
 
     validation_dataset = Dataset(
@@ -85,7 +85,7 @@ def main():
         y_valid_dir,
         preprocessing_fn=smp.encoders.get_preprocessing_fn(
             args['encoder'], args['encoder_weights']),
-        classes=args['classes'],
+        num_classes=args['num_classes'],
         augment=False
     )
 
@@ -105,7 +105,7 @@ def main():
     """
     model = SegmentationModel(args['encoder'],
                               args['encoder_weights'],
-                              args['classes'],
+                              args['num_classes'],
                               args['activation'],
                               args['device'],
                               args['save_dir']
