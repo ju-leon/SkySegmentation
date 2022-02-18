@@ -39,6 +39,9 @@ def main():
     parser.add_argument("--save_dir", type=str,
                         help='Directory to save the trained model to')
 
+    parser.add_argument("--classes", type=list,
+                        help='Classes in the dataset')
+
     parser.add_argument("--eval_dir", type=str, default=None,
                         help="If set, plots evaluating model performance will be stored here")
 
@@ -56,9 +59,6 @@ def main():
 
     parser.add_argument("--epochs", default=10, type=int,
                         help='Number of epochs to train')
-
-    parser.add_argument("--classes", type=list,
-                        help='Classes in the dataset')
     
 
     args = parser.parse_args() 
@@ -76,16 +76,16 @@ def main():
         x_train_dir,
         y_train_dir,
         preprocessing_fn=smp.encoders.get_preprocessing_fn(
-            ENCODER, ENCODER_WEIGHTS),
-        classes=CLASSES,
+            args['encoder'], args['encoder_weights']),
+        classes=args['classes'],
     )
 
     validation_dataset = Dataset(
         x_valid_dir,
         y_valid_dir,
         preprocessing_fn=smp.encoders.get_preprocessing_fn(
-            ENCODER, ENCODER_WEIGHTS),
-        classes=CLASSES,
+            args['encoder'], args['encoder_weights']),
+        classes=args['classes'],
         augment=False
     )
 
