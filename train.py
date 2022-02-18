@@ -97,7 +97,7 @@ validation_dataset = Dataset(
 
 
 
-train_loader = DataLoader(train_dataset, batch_size=8, shuffle=True, num_workers=2)
+train_loader = DataLoader(train_dataset, batch_size=8, shuffle=True, num_workers=0)
 valid_loader = DataLoader(validation_dataset, batch_size=1, shuffle=False, num_workers=0)
 
 # %%

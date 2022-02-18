@@ -23,7 +23,7 @@ class Dataset(BaseDataset):
     
     """ 
     def get_filename(self, string):
-        return string.split('.')[0]
+        return string[:-4]
 
     def __init__(
             self, 
@@ -38,6 +38,8 @@ class Dataset(BaseDataset):
         self.ids = list(map(self.get_filename, os.listdir(images_dir)))
         self.images_fps = [os.path.join(images_dir, image_id + IMAGE_FORMAT) for image_id in self.ids]
         self.masks_fps = [os.path.join(masks_dir, image_id + LABEL_FORMAT) for image_id in self.ids]
+        
+        print(self.images_fps) 
         
         # convert str names to class values on masks
         if classes_included == None:
