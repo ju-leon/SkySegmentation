@@ -1,8 +1,8 @@
-# %%%
 import os
 import torch
 import matplotlib.pyplot as plt
 import segmentation_models_pytorch as smp
+import argparse
 
 from pprint import pprint
 from torch.utils.data import DataLoader
@@ -11,28 +11,8 @@ from create_dataset import Dataset
 from create_model import SegmentationModel
 
 
-# %%
 
-DATA_DIR = '/Users/leonjungemeyer/Files/StarGazerML/Converters/data/voc'
-
-x_train_dir = os.path.join(DATA_DIR, 'JPEGImages')
-y_train_dir = os.path.join(DATA_DIR, 'SegmentationClass')
-
-x_valid_dir = os.path.join(DATA_DIR, 'val')
-y_valid_dir = os.path.join(DATA_DIR, 'valannot')
-
-CLASSES = ['background', 'sky', 'clouds', 'foreground', 'subject']
-
-ENCODER = 'se_resnext50_32x4d'
-ENCODER_WEIGHTS = 'imagenet'
-# could be None for logits or 'softmax2d' for multiclass segmentation
-ACTIVATION = 'sigmoid'
-DEVICE = 'cpu'
-
-# helper function for data visualization
-
-
-def visualize(**images):
+def visualize(path, **images):
     """Plot images in one row."""
     n = len(images)
     plt.figure(figsize=(16, 5))
@@ -46,61 +26,119 @@ def visualize(**images):
             image = np.argmax(image, axis=-1)
 
         plt.imshow(image)
-    plt.show()
-# %%
-"""
-
-augmented_dataset = Dataset(
-    x_train_dir,
-    y_train_dir,
-    preprocessing_fn=smp.encoders.get_preprocessing_fn(
-        ENCODER, ENCODER_WEIGHTS),
-    classes=CLASSES,
-)
-
-# same image with different random transforms
-for i in range(3):
-    image, mask = augmented_dataset[10]
-    visualize(image=image, mask=mask)
-    print(mask.shape)
-
-"""
-# %%
+    plt.savefig(path)
+    plt.close()
 
 
-model = SegmentationModel(ENCODER,
-                          ENCODER_WEIGHTS,
-                          CLASSES,
-                          ACTIVATION,
-                          DEVICE
-                          )
+def main():
+    parser = argparse.ArgumentParser(description='Setup variables')
+
+    parser.add_argument("--data_dir", type=str,
+                        help='Expects a data dir with subfolders train/, val/ with subfolders images/, labels/ containing annotated pairs')
+
+    parser.add_argument("--save_dir", type=str,
+                        help='Directory to save the trained model to')
+
+    parser.add_argument("--eval_dir", type=str, default=None,
+                        help="If set, plots evaluating model performance will be stored here")
+
+    parser.add_argument("--encoder", default="se_resnext50_32x4d", type=str,
+                        help='Segementation encoder')
+
+    parser.add_argument("--encoder_weights", default="imagenet", type=str,
+                        help='Encoder initalisation')
+
+    parser.add_argument("--activation", default="softmax2d", type=str,
+                        help='Activation fucntion')
+
+    parser.add_argument("--device", default="cpu", type=str,
+                        help='cuda or cpu')
+
+    parser.add_argument("--epochs", default=10, type=int,
+                        help='Number of epochs to train')
+
+    parser.add_argument("--classes", type=list,
+                        help='Classes in the dataset')
+    
+
+    args = parser.parse_args() 
+
+    x_train_dir = os.path.join(args['data_dir'], 'train', 'images')
+    y_train_dir = os.path.join(args['data_dir'], 'train', 'labels')
+
+    x_valid_dir = os.path.join(args['data_dir'], 'val', 'images')
+    y_valid_dir = os.path.join(args['data_dir'], 'val', 'labels')
+
+    """
+    Create train and validation dataset
+    """
+    train_dataset = Dataset(
+        x_train_dir,
+        y_train_dir,
+        preprocessing_fn=smp.encoders.get_preprocessing_fn(
+            ENCODER, ENCODER_WEIGHTS),
+        classes=CLASSES,
+    )
+
+    validation_dataset = Dataset(
+        x_valid_dir,
+        y_valid_dir,
+        preprocessing_fn=smp.encoders.get_preprocessing_fn(
+            ENCODER, ENCODER_WEIGHTS),
+        classes=CLASSES,
+        augment=False
+    )
 
 
-# %%
+    train_loader = DataLoader(train_dataset,
+                              batch_size=8,
+                              shuffle=True,
+                              num_workers=0)
 
-train_dataset = Dataset(
-    x_train_dir,
-    y_train_dir,
-    preprocessing_fn=smp.encoders.get_preprocessing_fn(
-        ENCODER, ENCODER_WEIGHTS),
-    classes=CLASSES,
-)
+    valid_loader = DataLoader(validation_dataset,
+                              batch_size=1,
+                              shuffle=False,
+                              num_workers=0)
 
-validation_dataset = Dataset(
-    x_train_dir,
-    y_train_dir,
-    preprocessing_fn=smp.encoders.get_preprocessing_fn(
-        ENCODER, ENCODER_WEIGHTS),
-    classes=CLASSES,
-    augment=False
-)
-
+    """
+    Create the model
+    """
+    model = SegmentationModel(args['encoder'],
+                              args['encoder_weights'],
+                              args['classes'],
+                              args['activation'],
+                              args['device'],
+                              args['save_dir']
+                              )
 
 
-train_loader = DataLoader(train_dataset, batch_size=8, shuffle=True, num_workers=0)
-valid_loader = DataLoader(validation_dataset, batch_size=1, shuffle=False, num_workers=0)
+    """
+    Train the model
+    """
+    model.train(train_loader, valid_loader, args['epochs'])
 
-# %%
+    """
+    Visualise model performance
+    """
+    if args['eval_dir'] is not None:
+        for i in range(5):
+            n = np.random.choice(len(validation_dataset))
+            
+            image, gt_mask = validation_dataset[n]
+            
+            gt_mask = gt_mask.squeeze()
+            
+            x_tensor = torch.from_numpy(image).to(args['device']).unsqueeze(0)
+            pr_mask = model.predict(x_tensor)
+            pr_mask = (pr_mask.squeeze().cpu().numpy().round())
+                
+            visualize(
+                path= os.path.join(args['eval_dir'], f"image_{i}.png"),
+                image=image, 
+                ground_truth_mask=gt_mask, 
+                predicted_mask=pr_mask
+            )
+    
 
-model.train(train_loader, valid_loader, 10)
-# %%
+if __name__ == "__main__":
+    main()

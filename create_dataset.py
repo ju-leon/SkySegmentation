@@ -39,15 +39,11 @@ class Dataset(BaseDataset):
         self.images_fps = [os.path.join(images_dir, image_id + IMAGE_FORMAT) for image_id in self.ids]
         self.masks_fps = [os.path.join(masks_dir, image_id + LABEL_FORMAT) for image_id in self.ids]
         
-        print(self.images_fps) 
-        
         # convert str names to class values on masks
         if classes_included == None:
             self.class_values = list(range(len(classes)))
         else:
             self.class_values = [classes.index(cls.lower()) for cls in classes_included]
-
-        print(f"Classes: {classes}, Class values: {self.class_values}")
 
         self.preprocessing_fn = preprocessing_fn
         
