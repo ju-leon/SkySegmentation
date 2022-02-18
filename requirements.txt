@@ -1,0 +1,12 @@
+aiohttp==3.8.1
+albumentations==1.1.0
+autopep8==1.6.0
+backports.functools-lru-cache==1.6.4
+dataclasses==0.8
+ipykernel==6.9.1
+matplotlib==3.5.1
+opencv-python==4.5.5.62
+pip-chill==1.0.1
+pytorch-lightning==1.5.10
+segmentation-models-pytorch==0.2.1
+typed-ast==1.5.2
