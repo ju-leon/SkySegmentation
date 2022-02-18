@@ -11,7 +11,6 @@ from create_dataset import Dataset
 from create_model import SegmentationModel
 
 
-
 def visualize(path, **images):
     """Plot images in one row."""
     n = len(images)
@@ -59,15 +58,14 @@ def main():
 
     parser.add_argument("--epochs", default=10, type=int,
                         help='Number of epochs to train')
-    
 
-    args = parser.parse_args() 
+    args = parser.parse_args()
 
-    x_train_dir = os.path.join(args['data_dir'], 'train', 'images')
-    y_train_dir = os.path.join(args['data_dir'], 'train', 'labels')
+    x_train_dir = os.path.join(args.data_dir, 'train', 'images')
+    y_train_dir = os.path.join(args.data_dir, 'train', 'labels')
 
-    x_valid_dir = os.path.join(args['data_dir'], 'val', 'images')
-    y_valid_dir = os.path.join(args['data_dir'], 'val', 'labels')
+    x_valid_dir = os.path.join(args.data_dir, 'val', 'images')
+    y_valid_dir = os.path.join(args.data_dir, 'val', 'labels')
 
     """
     Create train and validation dataset
@@ -76,64 +74,64 @@ def main():
         x_train_dir,
         y_train_dir,
         preprocessing_fn=smp.encoders.get_preprocessing_fn(
-            args['encoder'], args['encoder_weights']),
-        num_classes=args['num_classes'],
+            args.encoder, args.encoder_weights),
+        num_classes=args.num_classes
     )
 
-    validation_dataset = Dataset(
+    validation_dataset=Dataset(
         x_valid_dir,
         y_valid_dir,
-        preprocessing_fn=smp.encoders.get_preprocessing_fn(
-            args['encoder'], args['encoder_weights']),
-        num_classes=args['num_classes'],
-        augment=False
+        preprocessing_fn = smp.encoders.get_preprocessing_fn(
+            args.encoder, args.encoder_weights),
+        num_classes = args.num_classes,
+        augment = False
     )
 
 
-    train_loader = DataLoader(train_dataset,
-                              batch_size=8,
-                              shuffle=True,
-                              num_workers=0)
+    train_loader=DataLoader(train_dataset,
+                              batch_size = 8,
+                              shuffle = True,
+                              num_workers = 0)
 
-    valid_loader = DataLoader(validation_dataset,
-                              batch_size=1,
-                              shuffle=False,
-                              num_workers=0)
+    valid_loader=DataLoader(validation_dataset,
+                              batch_size = 1,
+                              shuffle = False,
+                              num_workers = 0)
 
     """
     Create the model
     """
-    model = SegmentationModel(args['encoder'],
-                              args['encoder_weights'],
-                              args['num_classes'],
-                              args['activation'],
-                              args['device'],
-                              args['save_dir']
+    model=SegmentationModel(args.encoder,
+                              args.encoder_weights,
+                              args.num_classes,
+                              args.activation,
+                              args.device,
+                              args.save_dir
                               )
 
 
     """
     Train the model
     """
-    model.train(train_loader, valid_loader, args['epochs'])
+    model.train(train_loader, valid_loader, args.epochs)
 
     """
     Visualise model performance
     """
     if args['eval_dir'] is not None:
         for i in range(5):
-            n = np.random.choice(len(validation_dataset))
-            
-            image, gt_mask = validation_dataset[n]
-            
-            gt_mask = gt_mask.squeeze()
-            
-            x_tensor = torch.from_numpy(image).to(args['device']).unsqueeze(0)
-            pr_mask = model.predict(x_tensor)
-            pr_mask = (pr_mask.squeeze().cpu().numpy().round())
-                
+            n=np.random.choice(len(validation_dataset))
+
+            image, gt_mask=validation_dataset[n]
+
+            gt_mask=gt_mask.squeeze()
+
+            x_tensor=torch.from_numpy(image).to(args.device).unsqueeze(0)
+            pr_mask=model.predict(x_tensor)
+            pr_mask=(pr_mask.squeeze().cpu().numpy().round())
+
             visualize(
-                path= os.path.join(args['eval_dir'], f"image_{i}.png"),
+                path= os.path.join(args.eval_dir, f"image_{i}.png"),
                 image=image, 
                 ground_truth_mask=gt_mask, 
                 predicted_mask=pr_mask
