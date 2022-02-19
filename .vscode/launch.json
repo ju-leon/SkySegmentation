@@ -1,0 +1,23 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Local Run",
+            "type": "python",
+            "request": "launch",
+            "program": "train.py",
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONWARNINGS": "ignore"
+            },
+            "args": [
+                "--data_dir", "/Users/leonjungemeyer/Files/StarGazerML/Converters/data/dataset",
+                "--save_dir", "log",
+                "--num_classes", "5",
+            ]
+        }
+    ]
+}
