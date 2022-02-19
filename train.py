@@ -66,6 +66,9 @@ def main():
     parser.add_argument("--lr", default=0.0001, type=float,
                         help='Inital learning rate')
 
+    parser.add_argument("--num_plots", default=10, type=int,
+        help='Number of visulistations of model performance after training.')
+
     args = parser.parse_args()
 
     """
@@ -149,7 +152,7 @@ def main():
     """
     Visualise model performance
     """
-    for i in range(20):
+    for i in range(args.num_plots):
         n = np.random.choice(len(validation_dataset))
 
         image, gt_mask = validation_dataset[n]
