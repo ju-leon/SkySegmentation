@@ -149,23 +149,22 @@ def main():
     """
     Visualise model performance
     """
-    if args.eval_dir is not None:
-        for i in range(5):
-            n = np.random.choice(len(validation_dataset))
+    for i in range(5):
+        n = np.random.choice(len(validation_dataset))
 
-            image, gt_mask = validation_dataset[n]
+        image, gt_mask = validation_dataset[n]
 
-            gt_mask = gt_mask.squeeze()
+        gt_mask = gt_mask.squeeze()
 
-            x_tensor = torch.from_numpy(image).to(args.device).unsqueeze(0)
-            pr_mask = model.predict(x_tensor)
-            pr_mask = (pr_mask.squeeze().cpu().numpy().round())
+        x_tensor = torch.from_numpy(image).to(args.device).unsqueeze(0)
+        pr_mask = model.predict(x_tensor)
+        pr_mask = (pr_mask.squeeze().cpu().numpy().round())
 
-            visualize(
-                image=image,
-                ground_truth_mask=gt_mask,
-                predicted_mask=pr_mask
-            )
+        visualize(
+            image=image,
+            ground_truth_mask=gt_mask,
+            predicted_mask=pr_mask
+        )
 
 
 if __name__ == "__main__":
