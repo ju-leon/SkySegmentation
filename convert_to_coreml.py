@@ -1,4 +1,5 @@
 import coremltools as ct
+import coremltools.proto.FeatureTypes_pb2 as ft
 import torch
 import argparse
 
@@ -73,7 +74,11 @@ def main():
     spec = model.get_spec()
     input_names = [inp.name for inp in spec.description.input]
     ct.utils.rename_feature(spec, input_names[0], 'image')
-    model = ct.models.MLModel(spec)
+
+    input = spec.description.input[0]
+    input.type.imageType.colorSpace = ft.ImageFeatureType.RGB
+    input.type.imageType.height = 512
+    input.type.imageType.width = 512
 
     # Add argmax layer to the end of the model to only select highest probability class
     nn = get_nn(spec)
