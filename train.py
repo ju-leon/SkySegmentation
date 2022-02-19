@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import segmentation_models_pytorch as smp
 import argparse
 import wandb
+import uuid
 
 from pprint import pprint
 from torch.utils.data import DataLoader
@@ -72,6 +73,9 @@ def main():
     for key in args.__dict__:
         config[key] = args.__dict__[key]
 
+    identifier = uuid.uuid1()
+    logdir = os.path.join(config['save_dir'], 'saved_models', str(identifier))
+
     """
     Init WandB logger
     """
@@ -121,7 +125,7 @@ def main():
                               args.num_classes,
                               args.activation,
                               args.device,
-                              args.save_dir
+                              logdir
                               )
 
     """
