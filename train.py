@@ -10,8 +10,8 @@ import uuid
 from pprint import pprint
 from torch.utils.data import DataLoader
 import numpy as np
-from create_dataset import Dataset
-from create_model import SegmentationModel
+from segmentation.dataset import Dataset
+from segmentation.model import SegmentationModel
 
 
 def visualize(**images):
