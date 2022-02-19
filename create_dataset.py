@@ -3,6 +3,7 @@ from posixpath import split
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
+import glob
 
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset as BaseDataset
@@ -24,7 +25,7 @@ class Dataset(BaseDataset):
     """
 
     def get_filename(self, string):
-        return string[:-4]
+        return os.path.splitext(os.path.basename(string))[0]
 
     def __init__(
             self,
@@ -35,7 +36,8 @@ class Dataset(BaseDataset):
             augment=True
     ):
 
-        self.ids = list(map(self.get_filename, os.listdir(images_dir)))
+        self.ids = list(map(self.get_filename, glob.glob(os.path.join(images_dir, '*' + IMAGE_FORMAT))))
+
         self.images_fps = [os.path.join(
             images_dir, image_id + IMAGE_FORMAT) for image_id in self.ids]
         self.masks_fps = [os.path.join(
