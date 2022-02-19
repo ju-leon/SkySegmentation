@@ -149,7 +149,7 @@ def main():
     """
     Visualise model performance
     """
-    for i in range(5):
+    for i in range(20):
         n = np.random.choice(len(validation_dataset))
 
         image, gt_mask = validation_dataset[n]
