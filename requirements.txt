@@ -11,3 +11,4 @@ pytorch-lightning==1.5.10
 segmentation-models-pytorch==0.2.1
 typed-ast==1.5.2
 wandb
+coremltools
