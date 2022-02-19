@@ -147,7 +147,7 @@ def main():
     """
     Visualise model performance
     """
-    if args['eval_dir'] is not None:
+    if args.eval_dir is not None:
         for i in range(5):
             n = np.random.choice(len(validation_dataset))
 
