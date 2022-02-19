@@ -10,7 +10,7 @@ from torch.utils.data import Dataset as BaseDataset
 import albumentations as albu
 
 IMAGE_FORMAT = ".jpg"
-LABEL_FORMAT = ".npy"
+LABEL_FORMAT = ".png"
 
 
 class Dataset(BaseDataset):
@@ -57,7 +57,9 @@ class Dataset(BaseDataset):
         # read data
         image = cv2.imread(self.images_fps[i])
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        mask = np.load(self.masks_fps[i])
+        
+        mask = cv2.imread(self.masks_fps[i])
+        mask = cv2.cvtColor(mask, cv2.COLOR_RGB2GRAY)
 
         # extract certain classes from mask (e.g. cars)
         masks = [(mask == v) for v in self.class_values]

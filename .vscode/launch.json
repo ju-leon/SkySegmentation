@@ -14,7 +14,7 @@
                 "PYTHONWARNINGS": "ignore"
             },
             "args": [
-                "--data_dir", "/Users/leonjungemeyer/Files/StarGazerML/Converters/data/dataset",
+                "--data_dir", "data",
                 "--save_dir", "log",
                 "--num_classes", "5",
             ]
