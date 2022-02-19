@@ -14,3 +14,21 @@ python create_dataset.py    path/to/labelme     \
                             path/to/save        \
                             path/to/labels.txt  
 ````
+
+
+## Training
+
+Train the model using `train.py`.
+
+Available architectures are:
+- pfn
+- unet
+- deeplab
+
+
+To train run:
+````
+python train.py     --data_dir    path/to/dataset         \
+                    --save_dir    path/to/save/model      \
+                    --num_classes 5                       
+````
