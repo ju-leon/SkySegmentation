@@ -64,6 +64,9 @@ def main():
     parser.add_argument("--epochs", default=10, type=int,
                         help='Number of epochs to train')
 
+    parser.add_argument("--lr", default=0.0001, type=float,
+                        help='Inital learning rate')
+
     args = parser.parse_args()
 
     """
