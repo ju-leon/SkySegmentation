@@ -133,3 +133,4 @@ wandb/
 
 # Logging
 log/
+data/
