@@ -48,6 +48,9 @@ def main():
     parser.add_argument("--num_classes", type=int,
                         help='Number of classes in the dataset including background')
 
+    parser.add_argument("--architecture", default="fpn", type=str,
+                        help='Model architecture. Available: fpn, deeplab, unet')
+
     parser.add_argument("--encoder", default="se_resnext50_32x4d", type=str,
                         help='Segementation encoder')
 
@@ -67,7 +70,7 @@ def main():
                         help='Inital learning rate')
 
     parser.add_argument("--num_plots", default=10, type=int,
-        help='Number of visulistations of model performance after training.')
+                        help='Number of visulistations of model performance after training.')
 
     args = parser.parse_args()
 
@@ -130,7 +133,8 @@ def main():
     """
     Create the model
     """
-    model = SegmentationModel(args.encoder,
+    model = SegmentationModel(args.architecture,
+                              args.encoder,
                               args.encoder_weights,
                               args.num_classes,
                               args.activation,

@@ -6,14 +6,33 @@ import wandb
 
 class SegmentationModel:
 
-    def __init__(self, encoder, encoder_weights, num_classes, activation, device, save_dir) -> None:
+    def __init__(self, architecture,  encoder, encoder_weights, num_classes, activation, device, save_dir) -> None:
         # create segmentation model with pretrained encoder
-        self.model = smp.FPN(
-            encoder_name=encoder,
-            encoder_weights=encoder_weights,
-            classes=num_classes,
-            activation=activation,
-        )
+        if architecture == 'fpn':
+            self.model = smp.FPN(
+                encoder_name=encoder,
+                encoder_weights=encoder_weights,
+                classes=num_classes,
+                activation=activation,
+            )
+        elif architecture == 'deeplab':
+            self.model = smp.DeepLabV3Plus(
+                encoder_name=encoder,
+                encoder_weights=encoder_weights,
+                encoder_output_stride=8,
+                classes=num_classes,
+                activation=activation,
+            )
+        elif architecture == 'unet':
+            self.model = smp.UnetPlusPlus(
+                encoder_name=encoder,
+                encoder_weights=encoder_weights,
+                classes=num_classes,
+                activation=activation,
+            )
+        else:
+            raise "Architecture not in list"
+
 
         self.preprocessing_fn = smp.encoders.get_preprocessing_fn(
             encoder, encoder_weights)

@@ -17,6 +17,7 @@
                 "--data_dir", "data",
                 "--save_dir", "log",
                 "--num_classes", "5",
+                "--architecture", "unet",
             ]
         }
     ]

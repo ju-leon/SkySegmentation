@@ -134,3 +134,4 @@ wandb/
 # Logging
 log/
 data/
+.DS_Store
