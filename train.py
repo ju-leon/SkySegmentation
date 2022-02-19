@@ -78,7 +78,9 @@ def main():
 
     identifier = uuid.uuid1()
     logdir = os.path.join(config['save_dir'], 'saved_models', str(identifier))
-    os.mkdir(logdir)
+    
+    if not os.path.exists(logdir):
+        os.makedirs(logdir)
 
     """
     Init WandB logger
