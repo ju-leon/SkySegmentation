@@ -1,3 +1,4 @@
+from email.policy import default
 import os
 import torch
 import matplotlib.pyplot as plt
@@ -13,7 +14,7 @@ from create_dataset import Dataset
 from create_model import SegmentationModel
 
 
-def visualize(path, **images):
+def visualize(**images):
     """Plot images in one row."""
     n = len(images)
     plt.figure(figsize=(16, 5))
@@ -29,8 +30,6 @@ def visualize(path, **images):
         plt.imshow(image)
 
     wandb.log({'Validation Segementation': wandb.Image(plt)})
-
-    plt.savefig(path)
     plt.close()
 
 
@@ -43,11 +42,11 @@ def main():
     parser.add_argument("--save_dir", type=str,
                         help='Directory to save the trained model to')
 
+    parser.add_argument("--checkpoint_dir", type=str, default=None,
+                        help='If set, the model will bo loaded from this state.')
+
     parser.add_argument("--num_classes", type=int,
                         help='Number of classes in the dataset including background')
-
-    parser.add_argument("--eval_dir", type=str, default=None,
-                        help="If set, plots evaluating model performance will be stored here")
 
     parser.add_argument("--encoder", default="se_resnext50_32x4d", type=str,
                         help='Segementation encoder')
@@ -136,6 +135,9 @@ def main():
                               logdir
                               )
 
+    if args.checkpoint_dir is not None:
+        model.load_checkpoint(args.checkpoint_dir)
+
     """
     Train the model
     """
@@ -160,7 +162,6 @@ def main():
             pr_mask = (pr_mask.squeeze().cpu().numpy().round())
 
             visualize(
-                path=os.path.join(args.eval_dir, f"image_{i}.png"),
                 image=image,
                 ground_truth_mask=gt_mask,
                 predicted_mask=pr_mask

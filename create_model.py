@@ -21,6 +21,8 @@ class SegmentationModel:
         self.device = device
         self.save_dir = save_dir
 
+    def load_checkpoint(self, path):
+        self.model = torch.load(path)
 
     def train(self, train_loader, val_loader, epochs=10, lr=0.0001):
         loss = smp.utils.losses.DiceLoss()
@@ -67,3 +69,6 @@ class SegmentationModel:
             if i == 25:
                 optimizer.param_groups[0]['lr'] = 1e-5
                 print('Decrease decoder learning rate to 1e-5!')
+
+    def predict(self, data):
+        return self.model.predict(data)
