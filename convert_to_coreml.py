@@ -1,5 +1,6 @@
 import coremltools as ct
 import coremltools.proto.FeatureTypes_pb2 as ft
+from coremltools.models.neural_network import datatypes, NeuralNetworkBuilder
 import torch
 import argparse
 
@@ -82,21 +83,41 @@ def main():
 
     # Add argmax layer to the end of the model to only select highest probability class
     nn = get_nn(spec)
+
+    # Add argmax layer
     new_layer = nn.layers.add()
     new_layer.name = "argmax"
     params = ct.proto.NeuralNetwork_pb2.ReduceLayerParams
     new_layer.reduce.mode = params.ARGMAX
     new_layer.reduce.axis = params.C
 
-    # Change input and output type to int
+    print(nn.layers[-1])
+
     new_layer.output.append(nn.layers[-2].output[0])
     nn.layers[-2].output[0] = nn.layers[-2].name + "_output"
     new_layer.input.append(nn.layers[-2].output[0])
 
+    # Add squeeze layer
+    new_layer = nn.layers.add()
+    new_layer.name = "squeeze"
+    params = ct.proto.NeuralNetwork_pb2.SqueezeLayerParams
+    new_layer.squeeze.squeezeAll = True
+    new_layer.output.append(nn.layers[-2].output[0])
+    nn.layers[-2].output[0] = nn.layers[-2].name + "_output"
+    new_layer.input.append(nn.layers[-2].output[0])
+
+
     spec.description.output[0].type.multiArrayType.dataType = ct.proto.FeatureTypes_pb2.ArrayFeatureType.INT32
+    
+
 
     output_names = [out.name for out in spec.description.output]
     ct.utils.rename_feature(spec, output_names[0], 'class_prediction')
+
+    output = spec.description.output[0]
+    output.type.imageType.colorSpace = ft.ImageFeatureType.GRAYSCALE
+    output.type.imageType.height = 512
+    output.type.imageType.width = 512
 
     ct.models.utils.save_spec(spec, args.out_dir)
 

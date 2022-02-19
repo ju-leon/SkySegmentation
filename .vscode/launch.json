@@ -14,10 +14,28 @@
                 "PYTHONWARNINGS": "ignore"
             },
             "args": [
-                "--data_dir", "data",
-                "--save_dir", "log",
-                "--num_classes", "5",
-                "--architecture", "unet",
+                "--data_dir",
+                "data",
+                "--save_dir",
+                "log",
+                "--num_classes",
+                "5",
+                "--architecture",
+                "unet",
+            ]
+        },
+        {
+            "name": "Convert",
+            "type": "python",
+            "request": "launch",
+            "program": "convert_to_coreml.py",
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONWARNINGS": "ignore"
+            },
+            "args": [
+                "log/saved_models/91b4921e-917a-11ec-97af-dca904894937/model_1.pth",
+                "coreml/model.mlmodel",
             ]
         }
     ]
