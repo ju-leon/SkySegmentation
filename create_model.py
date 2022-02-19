@@ -2,6 +2,7 @@ import torch
 import numpy as np
 import segmentation_models_pytorch as smp
 import os
+import wandb
 
 class SegmentationModel:
 
@@ -54,6 +55,10 @@ class SegmentationModel:
             train_logs = train_epoch.run(train_loader)
             valid_logs = valid_epoch.run(val_loader)
             
+            wandb.log({'train/dice_loss': train_logs['dice_loss'], 'train/iou_score': train_logs['iou_score']})
+            wandb.log({'validation/dice_loss': valid_logs['dice_loss'], 'validation/iou_score': valid_logs['iou_score']})
+
+
             # do something (save model, change lr, etc.)
             if max_score < valid_logs['iou_score']:
                 max_score = valid_logs['iou_score']

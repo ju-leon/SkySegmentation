@@ -3,6 +3,7 @@ import torch
 import matplotlib.pyplot as plt
 import segmentation_models_pytorch as smp
 import argparse
+import wandb
 
 from pprint import pprint
 from torch.utils.data import DataLoader
@@ -25,6 +26,9 @@ def visualize(path, **images):
             image = np.argmax(image, axis=-1)
 
         plt.imshow(image)
+
+    wandb.log({'Validation Segementation': wandb.Image(plt)})
+
     plt.savefig(path)
     plt.close()
 
@@ -61,6 +65,18 @@ def main():
 
     args = parser.parse_args()
 
+    """
+    Create config dict from parser args
+    """
+    config = {}
+    for key in args.__dict__:
+        config[key] = args.__dict__[key]
+
+    """
+    Init WandB logger
+    """
+    wandb.init(project="stargazer-segmentation", config=config)
+
     x_train_dir = os.path.join(args.data_dir, 'train', 'images')
     y_train_dir = os.path.join(args.data_dir, 'train', 'labels')
 
@@ -78,30 +94,29 @@ def main():
         num_classes=args.num_classes
     )
 
-    validation_dataset=Dataset(
+    validation_dataset = Dataset(
         x_valid_dir,
         y_valid_dir,
-        preprocessing_fn = smp.encoders.get_preprocessing_fn(
+        preprocessing_fn=smp.encoders.get_preprocessing_fn(
             args.encoder, args.encoder_weights),
-        num_classes = args.num_classes,
-        augment = False
+        num_classes=args.num_classes,
+        augment=False
     )
 
+    train_loader = DataLoader(train_dataset,
+                              batch_size=8,
+                              shuffle=True,
+                              num_workers=10)
 
-    train_loader=DataLoader(train_dataset,
-                              batch_size = 8,
-                              shuffle = True,
-                              num_workers = 10)
-
-    valid_loader=DataLoader(validation_dataset,
-                              batch_size = 1,
-                              shuffle = False,
-                              num_workers = 2)
+    valid_loader = DataLoader(validation_dataset,
+                              batch_size=1,
+                              shuffle=False,
+                              num_workers=2)
 
     """
     Create the model
     """
-    model=SegmentationModel(args.encoder,
+    model = SegmentationModel(args.encoder,
                               args.encoder_weights,
                               args.num_classes,
                               args.activation,
@@ -109,34 +124,36 @@ def main():
                               args.save_dir
                               )
 
-
     """
     Train the model
     """
-    model.train(train_loader, valid_loader, args.epochs)
+    model.train(train_loader,
+                valid_loader,
+                args.epochs,
+                args.lr)
 
     """
     Visualise model performance
     """
     if args['eval_dir'] is not None:
         for i in range(5):
-            n=np.random.choice(len(validation_dataset))
+            n = np.random.choice(len(validation_dataset))
 
-            image, gt_mask=validation_dataset[n]
+            image, gt_mask = validation_dataset[n]
 
-            gt_mask=gt_mask.squeeze()
+            gt_mask = gt_mask.squeeze()
 
-            x_tensor=torch.from_numpy(image).to(args.device).unsqueeze(0)
-            pr_mask=model.predict(x_tensor)
-            pr_mask=(pr_mask.squeeze().cpu().numpy().round())
+            x_tensor = torch.from_numpy(image).to(args.device).unsqueeze(0)
+            pr_mask = model.predict(x_tensor)
+            pr_mask = (pr_mask.squeeze().cpu().numpy().round())
 
             visualize(
-                path= os.path.join(args.eval_dir, f"image_{i}.png"),
-                image=image, 
-                ground_truth_mask=gt_mask, 
+                path=os.path.join(args.eval_dir, f"image_{i}.png"),
+                image=image,
+                ground_truth_mask=gt_mask,
                 predicted_mask=pr_mask
             )
-    
+
 
 if __name__ == "__main__":
     main()
