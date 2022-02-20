@@ -120,8 +120,8 @@ def main():
         args.encoder, args.encoder_weights)
 
     preprocessing_function, mean, std = center_preprocessing_function(params)
-    config['mean_scale'] = mean
-    config['std_scale'] = std
+    config['mean'] = mean
+    config['std'] = std
 
     """
     Init WandB logger
