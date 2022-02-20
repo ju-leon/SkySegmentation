@@ -61,7 +61,8 @@ class Dataset(BaseDataset):
             masks = []
             for category in self.merge_classes:
                 masks_category = [(mask == v) for v in category]
-                masks_category = np.max(masks_category, axis=0)
+                masks_category = np.stack(masks_category, axis=-1).astype('int')
+                masks_category = np.max(masks_category, axis=-1)
                 masks.append(masks_category)
         else:
             # Select all specified classes

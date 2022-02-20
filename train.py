@@ -148,7 +148,8 @@ def main():
         x_train_dir,
         y_train_dir,
         preprocessing_fn=preprocessing_function,
-        num_classes=args.num_classes
+        num_classes=args.num_classes,
+        merge_classes=args.merge_classes
     )
 
     validation_dataset = Dataset(
@@ -156,7 +157,8 @@ def main():
         y_valid_dir,
         preprocessing_fn=preprocessing_function,
         num_classes=args.num_classes,
-        augment=False
+        augment=False,
+        merge_classes=args.merge_classes
     )
 
     train_loader = DataLoader(train_dataset,
