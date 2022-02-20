@@ -51,7 +51,7 @@ class SegmentationModel:
     def load_checkpoint(self, path):
         self.model = torch.load(path)
 
-    def visualize(epoch, mean, std, num_classes, **images):
+    def visualize(self, epoch, mean, std, num_classes, **images):
         """Plot images in one row."""
         n = len(images)
         plt.figure(figsize=(16, 5))
