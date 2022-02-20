@@ -12,6 +12,8 @@ import wandb
 class SegmentationModel:
 
     def __init__(self, architecture,  encoder, encoder_weights, num_classes, activation, device, save_dir, config) -> None:
+        print("Init with classes: ", num_classes)
+
         # create segmentation model with pretrained encoder
         if architecture == 'fpn':
             self.model = smp.FPN(

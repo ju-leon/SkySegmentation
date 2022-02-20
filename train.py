@@ -174,11 +174,12 @@ def main():
     """
     Create the model
     """
+    num_classes = args.num_classes if args.merge_classes is None else len(
+        args.merge_classes)
     model = SegmentationModel(args.architecture,
                               args.encoder,
                               args.encoder_weights,
-                              args.num_classes if args.merge_classes is None else len(
-                                  args.merge_classes),
+                              num_classes,
                               args.activation,
                               args.device,
                               logdir,
