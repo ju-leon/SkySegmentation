@@ -137,10 +137,10 @@ class SegmentationModel:
                 pr_mask = (pr_mask.squeeze().cpu().numpy().round())
 
                 self.visualize(
-                    epoch=i,
-                    mean=self.config['mean'],
-                    std=self.config['std'],
-                    num_classes=self.config['num_classes'],
+                    i,
+                    self.config['mean'],
+                    self.config['std'],
+                    self.config['num_classes'],
                     image=image.squeeze().cpu().detach().numpy(),
                     ground_truth=label.squeeze().cpu().detach().numpy(),
                     prediction=pr_mask
