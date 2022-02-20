@@ -131,9 +131,7 @@ class SegmentationModel:
             if i % plot_interval == 0:
                 image, label = next(iter(val_loader))
 
-                x_tensor = torch.from_numpy(image).to(
-                    self.config['device']).unsqueeze(0)
-                pr_mask = self.predict(x_tensor)
+                pr_mask = self.predict(image)
                 pr_mask = (pr_mask.squeeze().cpu().numpy().round())
 
                 self.visualize(
@@ -141,8 +139,8 @@ class SegmentationModel:
                     mean=config['mean'],
                     std=config['std'],
                     num_classes=config['num_classes'],
-                    image=image,
-                    ground_truth=label,
+                    image=image.squeeze().cpu().detach().numpy(),
+                    ground_truth=label.squeeze().cpu().detach().numpy(),
                     prediction=pr_mask
                 )
 
