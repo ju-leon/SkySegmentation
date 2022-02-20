@@ -11,9 +11,11 @@ from torch.utils.data import DataLoader
 import numpy as np
 from segmentation.dataset import Dataset
 from segmentation.model import SegmentationModel
+from segmentation_models_pytorch.encoders._preprocessing import preprocess_input
+import functools
 
 
-def visualize(**images):
+def visualize(mean, std, **images):
     """Plot images in one row."""
     n = len(images)
     plt.figure(figsize=(16, 5))
@@ -22,7 +24,7 @@ def visualize(**images):
         plt.xticks([])
         plt.yticks([])
         plt.title(' '.join(name.split('_')).title())
-        image = np.transpose(image, (1, 2, 0))
+        image = (np.transpose(image, (1, 2, 0)) + (mean/std)) / (1/std)
         if image.shape[2] != 3:
             image = np.argmax(image, axis=-1)
 
@@ -30,6 +32,21 @@ def visualize(**images):
 
     wandb.log({'Validation Segementation': wandb.Image(plt)})
     plt.close()
+
+
+"""
+CoreML only supports equal scaling for every channel.
+Make sure the training params can be converted to CoreML later.
+"""
+
+
+def center_preprocessing_function(preprocessing_params):
+    preprocessing_params['std'] = [np.mean(preprocessing_params['std'])] * 3
+    preprocessing_params['mean'] = [np.mean(preprocessing_params['mean'])] * 3
+
+    mean = np.mean(preprocessing_params['mean'])
+    std = np.mean(preprocessing_params['std'])
+    return functools.partial(preprocess_input, **preprocessing_params), mean, std
 
 
 def main():
@@ -89,6 +106,16 @@ def main():
     config['logdir'] = logdir
 
     """
+    Create CoreML compatible scaler
+    """
+    params = smp.encoders.get_preprocessing_params(
+        args.encoder, args.encoder_weights)
+
+    preprocessing_function, mean, std = center_preprocessing_function(params)
+    config['mean_scale'] = mean
+    config['std_scale'] = std
+
+    """
     Init WandB logger
     """
     wandb.init(project="stargazer-segmentation", config=config)
@@ -105,16 +132,14 @@ def main():
     train_dataset = Dataset(
         x_train_dir,
         y_train_dir,
-        preprocessing_fn=smp.encoders.get_preprocessing_fn(
-            args.encoder, args.encoder_weights),
+        preprocessing_fn=preprocessing_function,
         num_classes=args.num_classes
     )
 
     validation_dataset = Dataset(
         x_valid_dir,
         y_valid_dir,
-        preprocessing_fn=smp.encoders.get_preprocessing_fn(
-            args.encoder, args.encoder_weights),
+        preprocessing_fn=preprocessing_function,
         num_classes=args.num_classes,
         augment=False
     )
@@ -167,6 +192,8 @@ def main():
         pr_mask = (pr_mask.squeeze().cpu().numpy().round())
 
         visualize(
+            mean=mean,
+            std=std,
             image=image,
             ground_truth_mask=gt_mask,
             predicted_mask=pr_mask

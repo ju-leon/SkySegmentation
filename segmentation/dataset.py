@@ -14,16 +14,6 @@ LABEL_FORMAT = ".png"
 
 
 class Dataset(BaseDataset):
-    """CamVid Dataset. Read images, apply augmentation and preprocessing transformations.
-
-    Args:
-        images_dir (str): path to images folder
-        masks_dir (str): path to segmentation masks folder
-        classes (list): All classes in the dataset. 0 should be background
-        class_values (list): Classes that should be included in the dataset
-
-    """
-
     def get_filename(self, string):
         return os.path.splitext(os.path.basename(string))[0]
 

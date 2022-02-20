@@ -4,6 +4,7 @@ from coremltools.models.neural_network import datatypes, NeuralNetworkBuilder
 import torch
 import argparse
 
+
 def get_nn(spec):
     if spec.WhichOneof("Type") == "neuralNetwork":
         return spec.neuralNetwork
@@ -53,8 +54,15 @@ def main():
     parser.add_argument("out_dir", type=str,
                         help='Path to save the model to')
 
+    parser.add_argument("--mean", type=float, default=0.45,
+                        help='Mean offset to apply to the data')
+
+    parser.add_argument("--std", type=float, default=0.225,
+                        help='Std scaling to apply to the model')
+
+
     args = parser.parse_args()
-    
+
     torch_model = torch.load(args.model_dir)
     torch_model.eval()
 
@@ -84,14 +92,19 @@ def main():
     # Add argmax layer to the end of the model to only select highest probability class
     nn = get_nn(spec)
 
+    # Scale the input image
+    preprocessing = nn.preprocessing.add()
+    preprocessing.scaler.blueBias = -(args.mean / args.std)
+    preprocessing.scaler.greenBias = -(args.mean / args.std)
+    preprocessing.scaler.redBias = -(args.mean / args.std)
+    preprocessing.scaler.channelScale = (1 / 255) * (1 / args.std)
+
     # Add argmax layer
     new_layer = nn.layers.add()
     new_layer.name = "argmax"
     params = ct.proto.NeuralNetwork_pb2.ReduceLayerParams
     new_layer.reduce.mode = params.ARGMAX
     new_layer.reduce.axis = params.C
-
-    print(nn.layers[-1])
 
     new_layer.output.append(nn.layers[-2].output[0])
     nn.layers[-2].output[0] = nn.layers[-2].name + "_output"
@@ -106,10 +119,7 @@ def main():
     nn.layers[-2].output[0] = nn.layers[-2].name + "_output"
     new_layer.input.append(nn.layers[-2].output[0])
 
-
     spec.description.output[0].type.multiArrayType.dataType = ct.proto.FeatureTypes_pb2.ArrayFeatureType.INT32
-    
-
 
     output_names = [out.name for out in spec.description.output]
     ct.utils.rename_feature(spec, output_names[0], 'class_prediction')
@@ -120,6 +130,7 @@ def main():
     output.type.imageType.width = 512
 
     ct.models.utils.save_spec(spec, args.out_dir)
+
 
 if __name__ == "__main__":
     main()
