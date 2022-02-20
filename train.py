@@ -17,7 +17,7 @@ from segmentation_models_pytorch.encoders._preprocessing import preprocess_input
 import functools
 
 
-def visualize(mean, std, num_classes, **images):
+def visualize(i, mean, std, num_classes, **images):
     """Plot images in one row."""
     n = len(images)
     plt.figure(figsize=(16, 5))
@@ -26,14 +26,16 @@ def visualize(mean, std, num_classes, **images):
         plt.xticks([])
         plt.yticks([])
         plt.title(' '.join(name.split('_')).title())
-        image = (np.transpose(image, (1, 2, 0)) + (mean/std)) / (1/std)
-        if image.shape[2] != 3:
+        if image.shape[0] != 3:
+            image = np.transpose(image, (1, 2, 0))
             image = np.argmax(image, axis=-1)
             plt.imshow(image, vmin=0, vmax=num_classes)
         else:
+            image = (np.transpose(image, (1, 2, 0)) + (mean/std)) / (1/std)
             plt.imshow(image)
 
-    wandb.log({'Validation Segementation': wandb.Image(plt)})
+    wandb.log({'eval/it': i,
+               'eval/segmentation': wandb.Image(plt)})
     plt.close()
 
 
@@ -125,6 +127,13 @@ def main():
     Init WandB logger
     """
     wandb.init(project="stargazer-segmentation", config=config)
+    wandb.define_metric(name="train/epoch")
+    wandb.define_metric(name="train/*",
+                        step_metric="train/epoch")
+
+    wandb.define_metric(name="eval/it")
+    wandb.define_metric(name="eval/*",
+                        step_metric="eval/it")
 
     x_train_dir = os.path.join(args.data_dir, 'train', 'images')
     y_train_dir = os.path.join(args.data_dir, 'train', 'labels')
@@ -166,10 +175,12 @@ def main():
     model = SegmentationModel(args.architecture,
                               args.encoder,
                               args.encoder_weights,
-                              args.num_classes if args.merge_classes is None else len(args.merge_classes),
+                              args.num_classes if args.merge_classes is None else len(
+                                  args.merge_classes),
                               args.activation,
                               args.device,
-                              logdir
+                              logdir,
+                              config
                               )
 
     if args.checkpoint_dir is not None:
@@ -198,9 +209,11 @@ def main():
         pr_mask = (pr_mask.squeeze().cpu().numpy().round())
 
         visualize(
+            i=i,
             mean=mean,
             std=std,
-            num_classes=args.num_classes if args.merge_classes is None else len(args.merge_classes),
+            num_classes=args.num_classes if args.merge_classes is None else len(
+                args.merge_classes),
             image=image,
             ground_truth_mask=gt_mask,
             predicted_mask=pr_mask

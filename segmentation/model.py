@@ -1,12 +1,17 @@
+from distutils.command.config import config
+from cv2 import mean
 import torch
 import numpy as np
 import segmentation_models_pytorch as smp
 import os
 import wandb
+import matplotlib.pyplot as plt
+import wandb
+
 
 class SegmentationModel:
 
-    def __init__(self, architecture,  encoder, encoder_weights, num_classes, activation, device, save_dir) -> None:
+    def __init__(self, architecture,  encoder, encoder_weights, num_classes, activation, device, save_dir, config) -> None:
         # create segmentation model with pretrained encoder
         if architecture == 'fpn':
             self.model = smp.FPN(
@@ -33,39 +38,68 @@ class SegmentationModel:
         else:
             raise "Architecture not in list"
 
-
         self.preprocessing_fn = smp.encoders.get_preprocessing_fn(
             encoder, encoder_weights)
 
         self.device = device
         self.save_dir = save_dir
 
+        self.config = config
+
     def load_checkpoint(self, path):
         self.model = torch.load(path)
 
-    def train(self, train_loader, val_loader, epochs=10, lr=0.0001):
+    def visualize(epoch, mean, std, num_classes, **images):
+        """Plot images in one row."""
+        n = len(images)
+        plt.figure(figsize=(16, 5))
+        for i, (name, image) in enumerate(images.items()):
+            plt.subplot(1, n, i + 1)
+            plt.xticks([])
+            plt.yticks([])
+            plt.title(' '.join(name.split('_')).title())
+            if image.shape[0] != 3:
+                image = np.transpose(image, (1, 2, 0))
+                image = np.argmax(image, axis=-1)
+                plt.imshow(image, vmin=0, vmax=num_classes)
+            else:
+                image = (np.transpose(image, (1, 2, 0)) + (mean/std)) / (1/std)
+                plt.imshow(image)
+
+        wandb.log({
+            'train/epoch': epoch,
+            'train/validation/segmentation': wandb.Image(plt)}
+        )
+        plt.close()
+
+    def train(self,
+              train_loader,
+              val_loader,
+              epochs=10,
+              lr=0.0001,
+              plot_interval=1):
         loss = smp.utils.losses.DiceLoss()
         metrics = [
             smp.utils.metrics.IoU(threshold=0.5),
         ]
 
-        optimizer = torch.optim.Adam([ 
+        optimizer = torch.optim.Adam([
             dict(params=self.model.parameters(), lr=lr),
         ])
 
         train_epoch = smp.utils.train.TrainEpoch(
-            self.model, 
-            loss=loss, 
-            metrics=metrics, 
+            self.model,
+            loss=loss,
+            metrics=metrics,
             optimizer=optimizer,
             device=self.device,
             verbose=True,
         )
 
         valid_epoch = smp.utils.train.ValidEpoch(
-            self.model, 
-            loss=loss, 
-            metrics=metrics, 
+            self.model,
+            loss=loss,
+            metrics=metrics,
             device=self.device,
             verbose=True,
         )
@@ -75,19 +109,42 @@ class SegmentationModel:
             print('\nEpoch: {}'.format(i))
             train_logs = train_epoch.run(train_loader)
             valid_logs = valid_epoch.run(val_loader)
-            
-            wandb.log({'train/dice_loss': train_logs['dice_loss'], 'train/iou_score': train_logs['iou_score']})
-            wandb.log({'validation/dice_loss': valid_logs['dice_loss'], 'validation/iou_score': valid_logs['iou_score']})
 
+            wandb.log({'train/epoch': i,
+                       'train/train/dice_loss': train_logs['dice_loss'],
+                       'train/train/iou_score': train_logs['iou_score']})
+
+            wandb.log({'train/epoch': i,
+                       'train/validation/dice_loss_val': valid_logs['dice_loss'],
+                       'train/validation/iou_score_val': valid_logs['iou_score']})
 
             # do something (save model, change lr, etc.)
             if max_score < valid_logs['iou_score']:
                 max_score = valid_logs['iou_score']
-                torch.save(self.model, os.path.join(self.save_dir, f"model_{i}.pth"))
-                
+                torch.save(self.model, os.path.join(
+                    self.save_dir, f"model_{i}.pth"))
+
             if i == 25:
                 optimizer.param_groups[0]['lr'] = 1e-5
                 print('Decrease decoder learning rate to 1e-5!')
+
+            if i % plot_interval == 0:
+                image, label = next(iter(val_loader))
+
+                x_tensor = torch.from_numpy(image).to(
+                    self.config['device']).unsqueeze(0)
+                pr_mask = self.predict(x_tensor)
+                pr_mask = (pr_mask.squeeze().cpu().numpy().round())
+
+                self.visualize(
+                    epoch=i,
+                    mean=config['mean'],
+                    std=config['std'],
+                    num_classes=config['num_classes'],
+                    image=image,
+                    ground_truth=label,
+                    prediction=pr_mask
+                )
 
     def predict(self, data):
         return self.model.predict(data)
