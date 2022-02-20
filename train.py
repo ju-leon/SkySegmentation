@@ -1,10 +1,12 @@
 import os
+from cv2 import merge
 import torch
 import matplotlib.pyplot as plt
 import segmentation_models_pytorch as smp
 import argparse
 import wandb
 import uuid
+import json
 
 from pprint import pprint
 from torch.utils.data import DataLoader
@@ -15,7 +17,7 @@ from segmentation_models_pytorch.encoders._preprocessing import preprocess_input
 import functools
 
 
-def visualize(mean, std, **images):
+def visualize(mean, std, num_classes, **images):
     """Plot images in one row."""
     n = len(images)
     plt.figure(figsize=(16, 5))
@@ -27,8 +29,9 @@ def visualize(mean, std, **images):
         image = (np.transpose(image, (1, 2, 0)) + (mean/std)) / (1/std)
         if image.shape[2] != 3:
             image = np.argmax(image, axis=-1)
-
-        plt.imshow(image)
+            plt.imshow(image, vmin=0, vmax=num_classes)
+        else:
+            plt.imshow(image)
 
     wandb.log({'Validation Segementation': wandb.Image(plt)})
     plt.close()
@@ -87,6 +90,9 @@ def main():
 
     parser.add_argument("--num_plots", default=10, type=int,
                         help='Number of visulistations of model performance after training.')
+
+    parser.add_argument("--merge_classes", default=None, type=json.loads,
+                        help='Specify classes to be merged. Pass list of lists. Classes inside the same sublist will be merged into one.')
 
     args = parser.parse_args()
 
@@ -160,7 +166,7 @@ def main():
     model = SegmentationModel(args.architecture,
                               args.encoder,
                               args.encoder_weights,
-                              args.num_classes,
+                              args.num_classes if args.merge_classes is None else len(args.merge_classes),
                               args.activation,
                               args.device,
                               logdir
@@ -194,6 +200,7 @@ def main():
         visualize(
             mean=mean,
             std=std,
+            num_classes=args.num_classes if args.merge_classes is None else len(args.merge_classes),
             image=image,
             ground_truth_mask=gt_mask,
             predicted_mask=pr_mask

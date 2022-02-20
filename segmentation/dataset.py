@@ -1,5 +1,6 @@
 import os
 from posixpath import split
+from cv2 import merge
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
@@ -23,10 +24,12 @@ class Dataset(BaseDataset):
             masks_dir,
             preprocessing_fn,
             num_classes,
-            augment=True
+            augment=True,
+            merge_classes=None
     ):
 
-        self.ids = list(map(self.get_filename, glob.glob(os.path.join(images_dir, '*' + IMAGE_FORMAT))))
+        self.ids = list(map(self.get_filename, glob.glob(
+            os.path.join(images_dir, '*' + IMAGE_FORMAT))))
 
         self.images_fps = [os.path.join(
             images_dir, image_id + IMAGE_FORMAT) for image_id in self.ids]
@@ -42,17 +45,28 @@ class Dataset(BaseDataset):
         else:
             self.augmentation = self.get_training_augmentation()
 
+        self.merge_classes = merge_classes
+
     def __getitem__(self, i):
 
         # read data
         image = cv2.imread(self.images_fps[i])
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        
+
         mask = cv2.imread(self.masks_fps[i])
         mask = cv2.cvtColor(mask, cv2.COLOR_RGB2GRAY)
 
-        # extract certain classes from mask (e.g. cars)
-        masks = [(mask == v) for v in self.class_values]
+        if self.merge_classes is not None:
+            # extract certain classes from mask
+            masks = []
+            for category in self.merge_classes:
+                masks_category = [(mask == v) for v in category]
+                masks_category = np.max(masks_category, axis=0)
+                masks.append(masks_category)
+        else:
+            # Select all specified classes
+            masks = [(mask == v) for v in self.class_values]
+
         mask = np.stack(masks, axis=-1).astype('float')
 
         # apply augmentations
@@ -105,7 +119,8 @@ class Dataset(BaseDataset):
 
             albu.OneOf(
                 [
-                    albu.augmentations.transforms.RandomBrightnessContrast(brightness_limit=[-0.6, 0.1], p=1),
+                    albu.augmentations.transforms.RandomBrightnessContrast(
+                        brightness_limit=[-0.6, 0.1], p=1),
                     albu.augmentations.transforms.HueSaturationValue(p=1),
                 ],
                 p=0.9,
