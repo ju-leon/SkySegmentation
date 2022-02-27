@@ -133,8 +133,8 @@ class SegmentationModel:
             if i % plot_interval == 0:
                 image, label = next(iter(val_loader))
 
-                pr_mask = self.predict(image)
-                pr_mask = (pr_mask.squeeze().cpu().numpy().round())
+                pr_mask = self.predict(image.cuda())
+                pr_mask = pr_mask.squeeze().cpu().numpy().round()
 
                 self.visualize(
                     i,
