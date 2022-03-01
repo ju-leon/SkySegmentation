@@ -15,6 +15,7 @@ from segmentation.dataset import Dataset
 from segmentation.model import SegmentationModel
 from segmentation_models_pytorch.encoders._preprocessing import preprocess_input
 import functools
+from convert_to_coreml import create_coreml_model
 
 
 def visualize(i, mean, std, num_classes, **images):
@@ -52,6 +53,46 @@ def center_preprocessing_function(preprocessing_params):
     mean = np.mean(preprocessing_params['mean'])
     std = np.mean(preprocessing_params['std'])
     return functools.partial(preprocess_input, **preprocessing_params), mean, std
+
+
+def create_dataloaders(location, preprocess_fn, config):
+    x_train_dir = os.path.join(location, 'train', 'images')
+    y_train_dir = os.path.join(location, 'train', 'labels')
+
+    x_valid_dir = os.path.join(location, 'val', 'images')
+    y_valid_dir = os.path.join(location, 'val', 'labels')
+
+    """
+    Create train and validation dataset
+    """
+    train_dataset = Dataset(
+        x_train_dir,
+        y_train_dir,
+        preprocessing_fn=preprocess_fn,
+        num_classes=config['num_classes'],
+        merge_classes=config['merge_classes']
+    )
+
+    validation_dataset = Dataset(
+        x_valid_dir,
+        y_valid_dir,
+        preprocessing_fn=preprocess_fn,
+        num_classes=config['num_classes'],
+        augment=False,
+        merge_classes=config['merge_classes']
+    )
+
+    train_loader = DataLoader(train_dataset,
+                              batch_size=8,
+                              shuffle=True,
+                              num_workers=10)
+
+    valid_loader = DataLoader(validation_dataset,
+                              batch_size=1,
+                              shuffle=False,
+                              num_workers=2)
+
+    return train_loader, valid_loader
 
 
 def main():
@@ -96,6 +137,12 @@ def main():
     parser.add_argument("--merge_classes", default=None, type=json.loads,
                         help='Specify classes to be merged. Pass list of lists. Classes inside the same sublist will be merged into one.')
 
+    parser.add_argument("--pretrain_dir", type=str, default=None,
+                        help='Directory of the prettraining dataset.')
+
+    parser.add_argument("--pretrain_epochs", default=100, type=int,
+                        help='Number of epochs to train on pretrain dataset.')
+
     args = parser.parse_args()
 
     """
@@ -135,42 +182,6 @@ def main():
     wandb.define_metric(name="eval/*",
                         step_metric="eval/it")
 
-    x_train_dir = os.path.join(args.data_dir, 'train', 'images')
-    y_train_dir = os.path.join(args.data_dir, 'train', 'labels')
-
-    x_valid_dir = os.path.join(args.data_dir, 'val', 'images')
-    y_valid_dir = os.path.join(args.data_dir, 'val', 'labels')
-
-    """
-    Create train and validation dataset
-    """
-    train_dataset = Dataset(
-        x_train_dir,
-        y_train_dir,
-        preprocessing_fn=preprocessing_function,
-        num_classes=args.num_classes,
-        merge_classes=args.merge_classes
-    )
-
-    validation_dataset = Dataset(
-        x_valid_dir,
-        y_valid_dir,
-        preprocessing_fn=preprocessing_function,
-        num_classes=args.num_classes,
-        augment=False,
-        merge_classes=args.merge_classes
-    )
-
-    train_loader = DataLoader(train_dataset,
-                              batch_size=8,
-                              shuffle=True,
-                              num_workers=10)
-
-    valid_loader = DataLoader(validation_dataset,
-                              batch_size=1,
-                              shuffle=False,
-                              num_workers=2)
-
     """
     Create the model
     """
@@ -190,37 +201,39 @@ def main():
         model.load_checkpoint(args.checkpoint_dir)
 
     """
+    Pretrain the model if dataset provided
+    """
+    if args.pretrain_dir != None:
+        train_loader, valid_loader = create_dataloaders(
+            args.pretrain_dir, preprocessing_function, config)
+
+        model.train(train_loader,
+                    valid_loader,
+                    args.epochs,
+                    args.lr)
+
+    """
     Train the model
     """
+    train_loader, valid_loader = create_dataloaders(
+        args.data_dir, preprocessing_function, config)
+
     model.train(train_loader,
                 valid_loader,
-                args.epochs,
+                args.pretrain_epochs,
                 args.lr)
 
     """
-    Visualise model performance
+    Export coreML model to WandB
     """
-    for i in range(args.num_plots):
-        n = np.random.choice(len(validation_dataset))
+    create_coreml_model(
+        model_dir=os.path.join(logdir, "model_latest.pth"),
+        out_dir=os.path.join(logdir, "segmentation.mlmodel"),
+        mean=mean,
+        std=std)
 
-        image, gt_mask = validation_dataset[n]
-
-        gt_mask = gt_mask.squeeze()
-
-        x_tensor = torch.from_numpy(image).to(args.device).unsqueeze(0)
-        pr_mask = model.predict(x_tensor)
-        pr_mask = (pr_mask.squeeze().cpu().numpy().round())
-
-        visualize(
-            i=i,
-            mean=mean,
-            std=std,
-            num_classes=args.num_classes if args.merge_classes is None else len(
-                args.merge_classes),
-            image=image,
-            ground_truth_mask=gt_mask,
-            predicted_mask=pr_mask
-        )
+    wandb.save(os.path.join(logdir, "segmentation.mlmodel"))
+    
 
 
 if __name__ == "__main__":

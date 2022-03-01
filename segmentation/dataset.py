@@ -115,7 +115,7 @@ class Dataset(BaseDataset):
                     albu.augmentations.transforms.MotionBlur(
                         blur_limit=3, p=1),
                 ],
-                p=0.9,
+                p=0.3,
             ),
 
             albu.OneOf(

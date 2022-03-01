@@ -136,3 +136,4 @@ log/
 data/
 .DS_Store
 *.mlmodel
+dataset_pretrain/

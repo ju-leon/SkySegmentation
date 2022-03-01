@@ -44,26 +44,8 @@ def convert_multiarray_to_image(feature, is_bgr=False):
     feature.type.imageType.width = width
     feature.type.imageType.height = height
 
-
-def main():
-    parser = argparse.ArgumentParser(description='Setup variables')
-
-    parser.add_argument("model_dir", type=str,
-                        help='Path to the model to convert')
-
-    parser.add_argument("out_dir", type=str,
-                        help='Path to save the model to')
-
-    parser.add_argument("--mean", type=float, default=0.45,
-                        help='Mean offset to apply to the data')
-
-    parser.add_argument("--std", type=float, default=0.225,
-                        help='Std scaling to apply to the model')
-
-
-    args = parser.parse_args()
-
-    torch_model = torch.load(args.model_dir)
+def create_coreml_model(model_dir, out_dir, mean, std):
+    torch_model = torch.load(model_dir)
     torch_model.eval()
 
     # Trace model
@@ -94,10 +76,10 @@ def main():
 
     # Scale the input image
     preprocessing = nn.preprocessing.add()
-    preprocessing.scaler.blueBias = -(args.mean / args.std)
-    preprocessing.scaler.greenBias = -(args.mean / args.std)
-    preprocessing.scaler.redBias = -(args.mean / args.std)
-    preprocessing.scaler.channelScale = (1 / 255) * (1 / args.std)
+    preprocessing.scaler.blueBias = -(mean / std)
+    preprocessing.scaler.greenBias = -(mean / std)
+    preprocessing.scaler.redBias = -(mean / std)
+    preprocessing.scaler.channelScale = (1 / 255) * (1 / std)
 
     # Add argmax layer
     new_layer = nn.layers.add()
@@ -129,7 +111,29 @@ def main():
     output.type.imageType.height = 512
     output.type.imageType.width = 512
 
-    ct.models.utils.save_spec(spec, args.out_dir)
+    ct.models.utils.save_spec(spec, out_dir)
+
+
+
+def main():
+    parser = argparse.ArgumentParser(description='Setup variables')
+
+    parser.add_argument("model_dir", type=str,
+                        help='Path to the model to convert')
+
+    parser.add_argument("out_dir", type=str,
+                        help='Path to save the model to')
+
+    parser.add_argument("--mean", type=float, default=0.45,
+                        help='Mean offset to apply to the data')
+
+    parser.add_argument("--std", type=float, default=0.225,
+                        help='Std scaling to apply to the model')
+
+
+    args = parser.parse_args()
+
+    create_coreml_model(args.model_dir, args.out_dir, args.mean, args.std)
 
 
 if __name__ == "__main__":

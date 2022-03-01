@@ -124,7 +124,7 @@ class SegmentationModel:
             if max_score < valid_logs['iou_score']:
                 max_score = valid_logs['iou_score']
                 torch.save(self.model, os.path.join(
-                    self.save_dir, f"model_{i}.pth"))
+                    self.save_dir, f"model_latest.pth"))
 
             if i == 25:
                 optimizer.param_groups[0]['lr'] = 1e-5
