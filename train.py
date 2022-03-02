@@ -55,7 +55,10 @@ def center_preprocessing_function(preprocessing_params):
     return functools.partial(preprocess_input, **preprocessing_params), mean, std
 
 
-def create_dataloaders(location, preprocess_fn, config):
+def create_dataloaders(location,
+                       preprocess_fn,
+                       config,
+                       resize_size):
     x_train_dir = os.path.join(location, 'train', 'images')
     y_train_dir = os.path.join(location, 'train', 'labels')
 
@@ -70,7 +73,8 @@ def create_dataloaders(location, preprocess_fn, config):
         y_train_dir,
         preprocessing_fn=preprocess_fn,
         num_classes=config['num_classes'],
-        merge_classes=config['merge_classes']
+        merge_classes=config['merge_classes'],
+        resize_images=resize_size
     )
 
     validation_dataset = Dataset(
@@ -79,7 +83,8 @@ def create_dataloaders(location, preprocess_fn, config):
         preprocessing_fn=preprocess_fn,
         num_classes=config['num_classes'],
         augment=False,
-        merge_classes=config['merge_classes']
+        merge_classes=config['merge_classes'],
+        resize_images=resize_size
     )
 
     train_loader = DataLoader(train_dataset,
@@ -113,7 +118,7 @@ def main():
     parser.add_argument("--architecture", default="fpn", type=str,
                         help='Model architecture. Available: fpn, deeplab, unet')
 
-    parser.add_argument("--encoder", default="se_resnext50_32x4d", type=str,
+    parser.add_argument("--encoder", default="mobilenet_v2", type=str,
                         help='Segementation encoder')
 
     parser.add_argument("--encoder_weights", default="imagenet", type=str,
@@ -205,7 +210,10 @@ def main():
     """
     if args.pretrain_dir != None:
         train_loader, valid_loader = create_dataloaders(
-            args.pretrain_dir, preprocessing_function, config)
+            args.pretrain_dir,
+            preprocessing_function,
+            config,
+            320)
 
         model.train(train_loader,
                     valid_loader,
@@ -216,7 +224,10 @@ def main():
     Train the model
     """
     train_loader, valid_loader = create_dataloaders(
-        args.data_dir, preprocessing_function, config)
+        args.data_dir,
+        preprocessing_function,
+        config,
+        1000)
 
     model.train(train_loader,
                 valid_loader,
@@ -233,7 +244,6 @@ def main():
         std=std)
 
     wandb.save(os.path.join(logdir, "segmentation.mlmodel"))
-    
 
 
 if __name__ == "__main__":

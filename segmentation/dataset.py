@@ -25,7 +25,8 @@ class Dataset(BaseDataset):
             preprocessing_fn,
             num_classes,
             augment=True,
-            merge_classes=None
+            merge_classes=None,
+            resize_images=1000
     ):
 
         self.ids = list(map(self.get_filename, glob.glob(
@@ -40,12 +41,13 @@ class Dataset(BaseDataset):
 
         self.preprocessing_fn = preprocessing_fn
 
+        self.merge_classes = merge_classes
+        self.resize_images = resize_images
+
         if augment:
             self.augmentation = self.get_training_augmentation()
         else:
             self.augmentation = self.get_training_augmentation()
-
-        self.merge_classes = merge_classes
 
     def __getitem__(self, i):
 
@@ -85,7 +87,7 @@ class Dataset(BaseDataset):
 
     def get_training_augmentation(self):
         train_transform = [
-            albu.augmentations.geometric.resize.LongestMaxSize(max_size=1000),
+            albu.augmentations.geometric.resize.LongestMaxSize(max_size=self.resize_images),
 
             albu.HorizontalFlip(p=0.5),
 
@@ -132,7 +134,7 @@ class Dataset(BaseDataset):
     def get_validation_augmentation(self):
         """Add paddings to make image shape divisible by 32"""
         test_transform = [
-            albu.augmentations.geometric.resize.LongestMaxSize(max_size=1000),
+            albu.augmentations.geometric.resize.LongestMaxSize(max_size=self.resize_images),
 
             albu.augmentations.transforms.PadIfNeeded(384, 480)
         ]
