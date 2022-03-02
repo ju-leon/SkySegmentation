@@ -217,7 +217,7 @@ def main():
 
         model.train(train_loader,
                     valid_loader,
-                    args.epochs,
+                    args.pretrain_epochs,
                     args.lr)
 
     """
@@ -231,7 +231,7 @@ def main():
 
     model.train(train_loader,
                 valid_loader,
-                args.pretrain_epochs,
+                args.epochs,
                 args.lr)
 
     """
