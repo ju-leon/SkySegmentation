@@ -63,7 +63,8 @@ class Dataset(BaseDataset):
             masks = []
             for category in self.merge_classes:
                 masks_category = [(mask == v) for v in category]
-                masks_category = np.stack(masks_category, axis=-1).astype('int')
+                masks_category = np.stack(
+                    masks_category, axis=-1).astype('int')
                 masks_category = np.max(masks_category, axis=-1)
                 masks.append(masks_category)
         else:
@@ -87,20 +88,30 @@ class Dataset(BaseDataset):
 
     def get_training_augmentation(self):
         train_transform = [
-            albu.augmentations.geometric.resize.LongestMaxSize(max_size=self.resize_images),
+            albu.augmentations.geometric.resize.LongestMaxSize(
+                max_size=self.resize_images),
 
             albu.HorizontalFlip(p=0.5),
 
             albu.augmentations.geometric.transforms.ShiftScaleRotate(
-                scale_limit=0.2, rotate_limit=0, shift_limit=0.1, p=1, border_mode=0),
+                scale_limit=0.2, rotate_limit=0, shift_limit=0.1, p=1),
 
-            albu.augmentations.transforms.PadIfNeeded(min_height=320, min_width=320,
-                                                      always_apply=True, border_mode=0),
-            albu.augmentations.crops.transforms.RandomCrop(
-                height=320, width=320, always_apply=True),
+            albu.augmentations.transforms.PadIfNeeded(
+                min_height=320,
+                min_width=320,
+                border_mode=cv2.BORDER_REFLECT,
+                always_apply=True),
+
+            albu.augmentations.crops.transforms.RandomResizedCrop(
+                scale=[0.8, 1.3],
+                height=320,
+                width=320,
+                always_apply=True),
+
 
             albu.augmentations.transforms.GaussNoise(p=0.2),
-            albu.augmentations.geometric.transforms.Perspective(p=0.5),
+            albu.augmentations.geometric.transforms.Perspective(
+                pad_mode=cv2.BORDER_REFLECT, p=0.5),
 
             albu.OneOf(
                 [
@@ -134,7 +145,8 @@ class Dataset(BaseDataset):
     def get_validation_augmentation(self):
         """Add paddings to make image shape divisible by 32"""
         test_transform = [
-            albu.augmentations.geometric.resize.LongestMaxSize(max_size=self.resize_images),
+            albu.augmentations.geometric.resize.LongestMaxSize(
+                max_size=self.resize_images),
 
             albu.augmentations.transforms.PadIfNeeded(384, 480)
         ]
