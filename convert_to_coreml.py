@@ -44,12 +44,13 @@ def convert_multiarray_to_image(feature, is_bgr=False):
     feature.type.imageType.width = width
     feature.type.imageType.height = height
 
+
 def create_coreml_model(model_dir, out_dir, mean, std):
-    torch_model = torch.load(model_dir)
+    torch_model = torch.load(model_dir, map_location='cpu')
     torch_model.eval()
 
     # Trace model
-    example_input = torch.rand(1, 3, 512, 512)
+    example_input = torch.rand(1, 3, 512, 512).cpu()
     traced_model = torch.jit.trace(torch_model, example_input)
     out = traced_model(example_input)
 
@@ -114,7 +115,6 @@ def create_coreml_model(model_dir, out_dir, mean, std):
     ct.models.utils.save_spec(spec, out_dir)
 
 
-
 def main():
     parser = argparse.ArgumentParser(description='Setup variables')
 
@@ -129,7 +129,6 @@ def main():
 
     parser.add_argument("--std", type=float, default=0.225,
                         help='Std scaling to apply to the model')
-
 
     args = parser.parse_args()
 
